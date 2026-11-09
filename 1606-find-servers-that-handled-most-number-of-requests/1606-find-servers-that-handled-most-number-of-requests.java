@@ -1,24 +1,33 @@
 class Solution {
-    record Job(int at, int server) {}  
-
     public List<Integer> busiestServers(int k, int[] arrival, int[] load) {
-        PriorityQueue<Integer> free = new PriorityQueue<>(); 
-        for (int x = 0; x < k; x++) free.add(x);  
-        PriorityQueue<Job> busy = new PriorityQueue<>(Comparator.comparingInt(Job::at));
-
-        int[] handled = new int[k];
-        for (int i = 0; i < arrival.length; i++) {
-            while (!busy.isEmpty() && busy.peek().at() <= arrival[i]) {  
-                int x = busy.poll().server();
-                free.add(i + Math.floorMod(x - i, k));  
+        TreeSet<Integer> avail = new TreeSet<>();
+        for(int i=0; i<k; i++) avail.add(i);
+        int n = arrival.length;
+        int[] count = new int[k];
+        PriorityQueue<int[]> pq = new PriorityQueue<>((a,b) -> {
+            return a[0]-b[0];
+        });
+        for(int i=0; i<n; i++) {
+            while(!pq.isEmpty() && pq.peek()[0] <= arrival[i]) {
+                avail.add(pq.poll()[1]);
             }
-            if (free.isEmpty()) continue;  
-            int x = free.poll() % k;
-            busy.add(new Job(arrival[i] + load[i], x));
-            handled[x]++;
+            if(avail.size()==0) continue;
+            Integer cand = avail.ceiling(i%k);
+            if(cand == null) {
+                cand = avail.first();
+            }
+            count[cand]++;
+            avail.remove(cand);
+            pq.offer(new int[]{load[i]+arrival[i], cand});
         }
-
-        int most = Arrays.stream(handled).max().getAsInt();
-        return IntStream.range(0, k).filter(x -> handled[x] == most).boxed().toList();
+        int mxm = 0;
+        for(int i=0; i<k; i++) {
+            mxm = Math.max(mxm, count[i]);
+        }
+        List<Integer> ans = new ArrayList<>();
+        for(int i=0; i<k; i++) {
+            if(count[i]==mxm) ans.add(i);
+        }
+        return ans;
     }
 }
